@@ -1,0 +1,7 @@
+<%args>
+  $form
+</%args>
+
+<& /page/page_title.mas, title => "Primer 3" &>
+
+<% $form %>
