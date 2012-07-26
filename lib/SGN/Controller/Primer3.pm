@@ -46,7 +46,7 @@ Submit input and return results
     
 =cut
     
-sub update :Path('/primer3/update') :Args(0) :FormConfig {
+sub update :Path('/primer3/update') :Args(0) {
     	my ($self, $c) = @_;
 
 	my $SEQUENCE_EXCLUDED_REGION = $c->request->params->{SEQUENCE_EXCLUDED_REGION};
@@ -207,12 +207,10 @@ sub update :Path('/primer3/update') :Args(0) :FormConfig {
 	my $PRIMER_WT_TM_LT = $c->request->params->{PRIMER_WT_TM_LT};
 	my $PRIMER_LIBERAL_BASE = $c->request->params->{PRIMER_LIBERAL_BASE};
 	my $PRIMER_PAIR_WT_LIBRARY_MISPRIMING = $c->request->params->{PRIMER_PAIR_WT_LIBRARY_MISPRIMING};
+	
+	$SEQUENCE_TEMPLATE =~ s/[^a-zA-Z]*//g;
 
-	my $filename = "primer3rawinput.txt";
-	my $tempdir = File::Spec->catfile($c->config->{basepath}, $c->tempfiles_subdir('primer3'), $filename);
-
-	open (RAW, ">$tempdir");
-	print RAW "SEQUENCE_EXCLUDED_REGION=$SEQUENCE_EXCLUDED_REGION
+	my $text =  qq(SEQUENCE_EXCLUDED_REGION=$SEQUENCE_EXCLUDED_REGION
 SEQUENCE_INCLUDED_REGION=$SEQUENCE_INCLUDED_REGION
 SEQUENCE_PRIMER_REVCOMP=$SEQUENCE_PRIMER_REVCOMP
 SEQUENCE_FORCE_LEFT_END=$SEQUENCE_FORCE_LEFT_END
@@ -371,24 +369,25 @@ PRIMER_WT_TM_LT=$PRIMER_WT_TM_LT
 PRIMER_LIBERAL_BASE=$PRIMER_LIBERAL_BASE
 PRIMER_PAIR_WT_LIBRARY_MISPRIMING=$PRIMER_PAIR_WT_LIBRARY_MISPRIMING
 =
-";
-	close (RAW);
+);
+	
+	my $filename = "primer3.txt";
+	my $tempdir = File::Spec->catfile($c->config->{basepath}, $c->tempfiles_subdir('primer3'), $filename);
 
-	# Remove parameters without user specified or default values.
-	open (RAW, "static/documents/tempfiles/primer3rawinput.txt");
-	open FILTERED, ">", "static/documents/tempfiles/primer3boulderio.txt";
-	while (<RAW>) {
-		if ($_ !~ m/=\n/) {
-		print FILTERED $_;
+	my @text = split("\n", $text);
+	my $filteredtext;
+	foreach my $item (@text) {
+		if ($item !~ m/=$/) {
+			$filteredtext .= $item."\n";
 		}
 	}
-	print FILTERED "=";
-	close (FILTERED);
-	close (RAW);
+	$filteredtext .= "=";
 
-	system("primer3_core < static/documents/tempfiles/primer3boulderio.txt > static/documents/tempfiles/primer3results.txt");
+	write_file($tempdir, $filteredtext);
 
-	open (RESULTS, 'static/documents/tempfiles/primer3results.txt');
+	system("primer3_core < $tempdir > $tempdir.results");
+
+	open (RESULTS, "$tempdir.results");
 	my %results;
 	while (<RESULTS>) {
 		chomp;
@@ -401,10 +400,6 @@ PRIMER_PAIR_WT_LIBRARY_MISPRIMING=$PRIMER_PAIR_WT_LIBRARY_MISPRIMING
 		  resultshash => \%results		
 	);
     }
-
-
-
-
 
 
 

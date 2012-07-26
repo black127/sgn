@@ -338,12 +338,6 @@ sub default_toolbar_data {
                     desc =>
 'The SGN Intron Finder works by doing a BLAST search for <em>Arabidopsis thaliana</em> proteins that are similar to the translated protein sequence of the DNA input.'
                 },
-                {
-                    name => 'Primer 3',
-                    link => '/primer3/',
-                    desc =>
-'Primer3 App.'
-                },
 
                 #Mapping
                 { name => 'Mapping' },
@@ -439,6 +433,11 @@ sub default_toolbar_data {
                     name => 'SGN Ontology Browser',
                     link => '/tools/onto/',
                     desc => 'AJAX ontology browser.'
+                },
+                {
+                    name => 'Primer 3',
+                    link => '/primer3/',
+                    desc => 'Pick primers for PCR reactions'
                 },
             ]
         }

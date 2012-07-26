@@ -2,16 +2,24 @@
   $resultshash
 </%args>
 
+<%once>
+use POSIX qw/ceil/;
+</%once>
+
 <& /page/page_title.mas, title => "Primer 3" &>
 
-PRIMER PICKING RESULTS FOR <% $resultshash->{'SEQUENCE_ID'} %>
+<HR></HR>
+
+<h1> Results </h1>
+
+Primer picking results for: <% $resultshash->{'SEQUENCE_ID'} %>
 
 <p>
 % if (exists $resultshash->{'PRIMER_MISPRIMING_LIBRARY'} ) {
 Using <% $resultshash->{'PRIMER_MISPRIMING_LIBRARY'} %> mispriming library
 % }
 % else {
-No mispriming library specified 
+No mispriming library specified.
 % }
 <p>
 
@@ -20,11 +28,12 @@ No mispriming library specified
 Using <% $resultshash->{'PRIMER_INTERNAL_MISHYB_LIBRARY'} %> mispriming library
 % }
 % else {
-No hyb oligo mishyb library specified
+No hyb oligo mishyb library specified.
 % }
 </p>
 
 % if (exists $resultshash->{'PRIMER_INTERNAL_0_SEQUENCE'}) {
+<center>
 <table border=1" cellpadding=4 cellspacing=4>
 <tr><th>OLIGO</th><td>start</td><td>len</td><td>tm</td><td>qc%</td><td>any</td><td>3'</td><td>seq</td></tr>
 % my @left = split(',', $resultshash->{'PRIMER_LEFT_0'});
@@ -36,15 +45,8 @@ No hyb oligo mishyb library specified
 <tr><th>RIGHT PRIMER</th><td><% $right[0] %></td><td><% $right[1] %></td><td><% $resultshash->{'PRIMER_RIGHT_0_TM'} %></td><td><% $resultshash->{'PRIMER_RIGHT_0_GC_PERCENT'} %></td><td><% $resultshash->{'PRIMER_RIGHT_0_SELF_ANY'} %></td><td> <% $resultshash->{'PRIMER_RIGHT_0_SELF_END'} %></td><td><% $resultshash->{'PRIMER_RIGHT_0_SEQUENCE'} %></td></tr>
 
 <tr><th>HYB OLIGO</th><td><% $hybrid[0] %></td><td><% $hybrid[1] %></td><td><% $resultshash->{'PRIMER_INTERNAL_0_TM'} %></td><td><% $resultshash->{'PRIMER_INTERNAL_0_GC_PERCENT'} %></td><td><% $resultshash->{'PRIMER_INTERNAL_0_SELF_ANY'} %></td><td> <% $resultshash->{'PRIMER_INTERNAL_0_SELF_END'} %></td><td><% $resultshash->{'PRIMER_INTERNAL_0_SEQUENCE'} %></td></tr> 
-
 </table>
-% }
-% else {
-<h1> No Acceptable Primers Were Found </h1>
-<p>
-The statistics below should indicate why no acceptable primers were found. Try relaxing various parameters, including the self-complementarity parameters and max and min oligo melting temperatures. For example, for very A-T-rich regions you might have to increase maximum primer size or decrease minimum melting temperature. 
-</p>
-% }
+</center>
 
 <p>
 SEQUENCE SIZE:  <% length($resultshash->{'SEQUENCE_TEMPLATE'}) %>
@@ -60,10 +62,78 @@ PRODUCT SIZE:  <% $resultshash->{'PRIMER_PAIR_0_PRODUCT_SIZE'} %>, PAIR ANY COMP
 TARGETS {start, len}*:  <% $resultshash->{'SEQUENCE_TARGET'} %>
 </p>
 <p>
-EXCLUDED REGIONS {start, len}*: <% $resultshash->{'SEQUENCE_INTERNAL_EXCLUDED_REGION'} %>
+EXCLUDED REGIONS {start, len}*: <% $resultshash->{'SEQUENCE_EXCLUDED_REGION'} %>
 </p>
 
+
+<p>
+<center>
+<table style="font-family:arial;">
+% my $sequence = $resultshash->{'SEQUENCE_TEMPLATE'};
+% my @seq = split(undef,$sequence);
+% my $numrows= ceil((length($sequence))/60);
+% my $line = -59;
+% my @excluded = split(',', $resultshash->{'SEQUENCE_EXCLUDED_REGION'});
+% my @target = split(',', $resultshash->{'SEQUENCE_TARGET'});
+% while ($numrows > 0) {
+%	$line += 60;
+	<tr>
+	<td> <b> <% $line %> </b> </td>
+%	foreach my $i ($line .. $line+59) {
+%		if (exists $seq[$i-1]) {
+			<td> <% $seq[$i-1] %> </td>
+%		}
+%	}
+	</tr>
+	<tr>
+	<td></td>
+%	foreach my $i ($line .. $line+59) {
+%		if ( ($i >= int($excluded[0])) && ($i <= (int($excluded[0]))+(int($excluded[1])-1)) ) {
+			<td style="color:red;"> X </td>
+%		}
+%		elsif ( $i >= (int($target[0])) && $i <= (int($target[0])+int($target[1])-1) ) {
+			<td> * </td>
+%		}
+%		elsif ( $i >= int($left[0]) && $i <= (int($left[0])+int($left[1])-1) ) {
+			<td style="color:blue;"> > </td>
+%		}
+%		elsif ( ($i <= int($right[0])) && ($i >= ((int($right[0]))-(int($right[1])-1))) ) {
+			<td style="color:blue;"> < </td>
+%		}
+%		elsif ( $i >= (int($hybrid[0])) && $i <= (int($hybrid[0])+int($hybrid[1])-1) ) {
+			<td style="color:green;"> ^ </td>
+%		}
+%		else {
+			<td> </td>
+%		}
+%	};
+	</tr>
+	<tr>
+	</tr>
+%	$numrows--;
+% }
+</table border=1">
+<table cellpadding=2>
+KEYS (in order of precedence)
+<tr><td style="color:red;">XXXXXX</td><td>excluded region</td></tr>
+<tr><td>******</td><td>target</td></tr>
+<tr><td style="color:blue;">>>>>>></td><td>left primer</td></tr>
+<tr><td style="color:blue;"><<<<<<</td><td>right primer</td></tr>
+<tr><td style="color:green;">^^^^^^</td><td>hyb oligo</td></tr>
+</table>
+</center>
+</p>
+% }
+% else {
+<HR></HR>
+<h1> No Acceptable Primers Were Found </h1>
+<p>
+The statistics below should indicate why no acceptable primers were found. Try relaxing various parameters, including the self-complementarity parameters and max and min oligo melting temperatures. For example, for very A-T-rich regions you might have to increase maximum primer size or decrease minimum melting temperature. 
+</p>
+% }
+
 % if (exists $resultshash->{'PRIMER_INTERNAL_1_SEQUENCE'}) {
+<HR></HR>
 <h5>Additional Oligos</h5>
 <table border=1" cellpadding=4 cellspacing=4>
 <tr><td>1</td><th>OLIGO</th><td>start</td><td>len</td><td>tm</td><td>qc%</td><td>any</td><td>3'</td><td>seq</td></tr>
@@ -264,7 +334,7 @@ EXCLUDED REGIONS {start, len}*: <% $resultshash->{'SEQUENCE_INTERNAL_EXCLUDED_RE
 </table>
 % }
 
-
+<HR></HR>
 <h5> Statistics </h5>
 
 <p>
@@ -283,5 +353,3 @@ Pair Stats:  <% $resultshash->{'PRIMER_PAIR_EXPLAIN'} %>
 % if (exists $resultshash->{'PRIMER_ERROR'}) {
 ERROR MESSAGE: <% $resultshash->{'PRIMER_ERROR'} %>
 % }
-
-
